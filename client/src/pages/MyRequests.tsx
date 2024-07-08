@@ -47,6 +47,7 @@ const MyRequests: React.FC = () => {
         }, {} as { [key: string]: Lodging });
 
         setRequests(records);
+        console.log(records)
         setLodgings(lodgingsDict);
       } catch (error) {
         console.error('Error fetching requests:', error);

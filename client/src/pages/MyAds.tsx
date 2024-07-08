@@ -47,6 +47,7 @@ const MyAds: React.FC = () => {
           sort: '-created',
         });
         setLodgings(records);
+        console.log(records)
       } catch (error) {
         console.error('Error fetching lodgings:', error);
       }
