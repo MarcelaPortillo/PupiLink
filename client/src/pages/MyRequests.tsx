@@ -21,6 +21,8 @@ const MyRequests: React.FC = () => {
   const [requests, setRequests] = useState<Request[]>([]);
   const [lodgings, setLodgings] = useState<{ [key: string]: Lodging }>({});
 
+  
+
   useEffect(() => {
     const fetchRequests = async () => {
       try {
@@ -58,40 +60,55 @@ const MyRequests: React.FC = () => {
     try {
       await pb.collection('lodgingRequest').delete(requestId);
       setRequests(requests.filter(request => request.id !== requestId));
-      toast.success('Solicitud cancelada');
+      toast.success('Solicitud cancelada exitosamente');
     } catch (error) {
       console.error('Error canceling request:', error);
       toast.error('Error al cancelar la solicitud');
     }
   };
 
+  const requestStatusMap = {
+    SENT: "Enviado",
+    ACCEPTED: "Aceptado",
+    REJECTED: "Rechazado",
+    ON_EVALUATION: "En evaluación",
+  };
+
   return (
-    <div className="container mx-auto px-4 mt-20">
-      <h1 className="text-2xl font-bold my-4">Tus Solicitudes</h1>
+    <div className="container mx-auto pt-4 mt-20 bg-gray-100">
+      <h1 className="text-2xl font-bold text-gray-500 my-4">Tus Solicitudes</h1>
       <div className="space-y-4">
-        {requests.map(request => {
+        {requests.map((request) => {
           const lodging = lodgings[request.lodging];
           return (
-            <div key={request.id} className="bg-gray-100 p-4 rounded-lg flex items-center justify-between">
+            <div key={request.id} className="bg-gray-200 p-4 m-4 rounded-lg flex items-center justify-between">
               <div className="flex items-center">
                 {lodging && (
-                  <img src={pb.files.getUrl(lodging, lodging.image)} alt={lodging.title} className="h-24 w-24 rounded-lg mr-4 object-cover" />
+                  <img
+                    src={pb.files.getUrl(lodging, lodging.image)}
+                    alt={lodging.title}
+                    className="h-24 w-25   rounded-lg mr-4 object-cover"
+                  />
                 )}
                 <div>
-                  <div className="text-purple-600 font-bold">{lodging?.title || 'Ubicación desconocida'}</div>
-                  <div>Fecha de Creación: {new Date(request.created).toLocaleDateString()}</div>
-                  <div>Precio Propuesto: ${request.proposedPrice}</div>
-                  <div>Estado: {request.status}</div>
+                  <div className="text-gray-600  text-lg font-bold">
+                    {lodging?.title || "Ubicación desconocida"}
+                  </div>
+                  <div className="flex space-x-4">
+                    <div>Fecha de Creación: {new Date(request.created).toLocaleDateString()}</div>
+                    <div>Precio Propuesto: ${request.proposedPrice}</div>
+                    <div>
+                      Estado: {requestStatusMap[request.status] || request.status}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1">
                 <button
                   onClick={() => handleCancelRequest(request.id)}
-                  className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                  className="bg-red-500 text-white px-4 py-2 mr-5 font-bold font-barlowc rounded hover:bg-red-700"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-10.707a1 1 0 00-1.414-1.414L10 8.586 7.707 6.293a1 1 0 00-1.414 1.414L8.586 10l-2.293 2.293a1 1 0 001.414 1.414L10 11.414l2.293 2.293a1 1 0 001.414-1.414L11.414 10l2.293-2.293z" clipRule="evenodd" />
-                  </svg>
+                  Eliminar
                 </button>
               </div>
             </div>
