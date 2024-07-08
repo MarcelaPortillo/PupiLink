@@ -620,7 +620,7 @@ const PublishForm = () => {
             más certera posible la localización del lugar que desea publicar
           </Typography>
         </Grid>
-        <Grid item xs={12} sx={{ height: { xs: "40vh", md: "calc(50vh - 50px)" } }}>
+        <Grid item xs={12} sx={{ height:  "calc(50vh - 50px)"  }}>
           <MapContainer center={[13.6989, -89.1914]} zoom={9} style={{ height: "90%", width: "99%" }}>
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
