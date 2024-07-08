@@ -1,4 +1,4 @@
-import ClearIcon from '@mui/icons-material/Clear';
+import ClearIcon from "@mui/icons-material/Clear";
 import { zodResolver } from "@hookform/resolvers/zod";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
@@ -21,7 +21,7 @@ import {
   Stack,
   SxProps,
   TextField,
-  Typography
+  Typography,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { useCallback, useState, useRef, useEffect } from "react";
@@ -33,18 +33,28 @@ import ToiletIcon from "../assets/toilet.svg";
 import PupilinkButton from "../components/PupilinkButton";
 import CheckboxInput from "../components/form/CheckboxInput";
 import NumericInput from "../components/form/NumericInput";
-import RadioGroupInput, { RadioGroupType } from "../components/form/RadioGroupInput";
+import RadioGroupInput, {
+  RadioGroupType,
+} from "../components/form/RadioGroupInput";
 import TextInput from "../components/form/TextInput";
 import LodgingStatus from "../enums/LodgingStatus";
 import LodgingType from "../enums/LodgingType";
 import FormUtils from "../utils/FormUtils";
-import { PublishLodgingRequest, PublishLodgingSchema } from "../utils/PublishLodgingSchema";
-import LodgingService from '../services/LodgingService';
-import { useNavigate } from 'react-router-dom';
-import PupilinkRoutes from '../enums/PupilinkRoutes';
-import { MapContainer, TileLayer, useMapEvent, Marker, Popup } from "react-leaflet";
-import { toast, ToastOptions } from 'react-toastify';
-import NavbarUser from '../components/NavbarUser';
+import {
+  PublishLodgingRequest,
+  PublishLodgingSchema,
+} from "../utils/PublishLodgingSchema";
+import LodgingService from "../services/LodgingService";
+import { useNavigate } from "react-router-dom";
+import PupilinkRoutes from "../enums/PupilinkRoutes";
+import {
+  MapContainer,
+  TileLayer,
+  useMapEvent,
+  Marker,
+  Popup,
+} from "react-leaflet";
+import { toast, ToastOptions } from "react-toastify";
 
 const formTitleStyle: SxProps = {
   fontFamily: "Barlow Condensed, Arial",
@@ -107,7 +117,7 @@ const lodgingStatusRadioOptions: RadioGroupType<LodgingStatus>[] = [
   {
     name: "En mantenimiento",
     value: LodgingStatus.UNDER_MAINTENANCE,
-  }
+  },
 ];
 
 const lodgingTypeRadioOptions: RadioGroupType<LodgingType>[] = [
@@ -131,12 +141,24 @@ const lodgingTypeRadioOptions: RadioGroupType<LodgingType>[] = [
     name: "Residencial Estudiantil",
     value: LodgingType.STUDENT_RESIDENCE,
   },
-]
+];
+
+interface Coordinates {
+  lat: string;
+  lng: string;
+}
 
 const PublishForm = () => {
-  const [coordinates, setCoordinates] = useState(null);
+  const [coordinates, setCoordinates] = useState<Coordinates>();
   const [image, setImage] = useState<string | null>(null);
-  const { handleSubmit, control, setValue, formState: { errors } } = useForm<PublishLodgingRequest>({ resolver: zodResolver(PublishLodgingSchema) });
+  const {
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm<PublishLodgingRequest>({
+    resolver: zodResolver(PublishLodgingSchema),
+  });
   const navigate = useNavigate();
   const markerRef = useRef(null);
 
@@ -147,24 +169,23 @@ const PublishForm = () => {
     closeOnClick: true,
     pauseOnHover: true,
     draggable: true,
-    progress: undefined,
   };
 
   const clearImage = () => {
     setImage(null);
     setValue("image", null);
-  }
+  };
 
-  const ClickHandler = ({ setCoordinates }) => {
+  const ClickHandler = () => {
     useMapEvent("click", (event) => {
       const { lat, lng } = event.latlng;
       setCoordinates({ lat: lat.toString(), lng: lng.toString() });
     });
-    return null;
   };
 
   useEffect(() => {
     if (markerRef.current) {
+      // @ts-ignore
       markerRef.current.openPopup();
     }
   }, [coordinates]);
@@ -174,13 +195,14 @@ const PublishForm = () => {
       data.latitude = coordinates?.lat ? coordinates.lat : "0";
       data.longitude = coordinates?.lng ? coordinates.lng : "0";
 
-      const response = await LodgingService.createLodging(data);
+      await LodgingService.createLodging(data);
 
       toast.success("Alojamiento publicado con exito", {
         ...toastOptions,
         style: { backgroundColor: "white", color: "green" },
         progressStyle: { backgroundColor: "green" },
       });
+
       setTimeout(() => {
         navigate(PupilinkRoutes.ROOT);
       }, 1000);
@@ -204,15 +226,18 @@ const PublishForm = () => {
     }
   }, [errors]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    setValue("image", file);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  }, [setValue]);
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const file = acceptedFiles[0];
+      setValue("image", file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    },
+    [setValue]
+  );
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
@@ -221,11 +246,16 @@ const PublishForm = () => {
 
   return (
     <>
-      
       <Grid
         component={"form"}
         onSubmit={handleSubmit(onSubmit)}
-        sx={{ bgcolor: "#F5F5F5", width: "98%", marginInline: "auto", my: 2, mt: { xs: 10, md: 12 } }}
+        sx={{
+          bgcolor: "#F5F5F5",
+          width: "98%",
+          marginInline: "auto",
+          my: 2,
+          mt: { xs: 10, md: 12 },
+        }}
         container
         spacing={2}
       >
@@ -245,8 +275,8 @@ const PublishForm = () => {
             <Box>
               <Typography sx={formTitleStyle}>Titulo</Typography>
               <Typography sx={formDescriptionStyle}>
-                Agrega un título corto a tu publicación para que sea fácil de leer
-                para los interesados
+                Agrega un título corto a tu publicación para que sea fácil de
+                leer para los interesados
               </Typography>
               <TextInput name="title" control={control} />
             </Box>
@@ -273,8 +303,8 @@ const PublishForm = () => {
             <Box>
               <Typography sx={formTitleStyle}>Estado</Typography>
               <Typography sx={formDescriptionStyle}>
-                Selecciona el estado de disponibilidad con el que cuenta actualmente
-                el lugar que estas dando en alquiler
+                Selecciona el estado de disponibilidad con el que cuenta
+                actualmente el lugar que estas dando en alquiler
               </Typography>
               <RadioGroupInput
                 control={control}
@@ -330,7 +360,9 @@ const PublishForm = () => {
               </Box>
             </Box>
             <Box>
-              <Typography sx={formTitleStyle}>Fecha de disponibilidad</Typography>
+              <Typography sx={formTitleStyle}>
+                Fecha de disponibilidad
+              </Typography>
               <Typography sx={formDescriptionStyle}>
                 Indica la fecha en que estara disponible el lugar que daras en
                 alquiler
@@ -340,7 +372,10 @@ const PublishForm = () => {
                   name="available"
                   control={control}
                   render={({ field, formState: { errors } }) => {
-                    const formError = FormUtils.getFormError("available", errors);
+                    const formError = FormUtils.getFormError(
+                      "available",
+                      errors
+                    );
                     return (
                       <DatePicker
                         {...field}
@@ -372,7 +407,9 @@ const PublishForm = () => {
                               "& > *": {
                                 paddingBlock: "0.25rem !important",
                               },
-                              "& .MuiOutlinedInput-root": { bgcolor: "#dcdce8" },
+                              "& .MuiOutlinedInput-root": {
+                                bgcolor: "#dcdce8",
+                              },
                             },
                           },
                         }}
@@ -385,17 +422,17 @@ const PublishForm = () => {
             <Box>
               <Typography sx={formTitleStyle}>Reglas de convivencia</Typography>
               <Typography sx={formDescriptionStyle}>
-                En este apartado puedes indicar de manera textual algunas reglas o
-                normas que quieras que los inquilinos sepan si es que desean mudarse
-                al lugar que estas dando en alquiler
+                En este apartado puedes indicar de manera textual algunas reglas
+                o normas que quieras que los inquilinos sepan si es que desean
+                mudarse al lugar que estas dando en alquiler
               </Typography>
               <TextInput name="coexistenceRules" control={control} multiline />
             </Box>
             <Box>
               <Typography sx={formTitleStyle}>Dirección</Typography>
               <Typography sx={formDescriptionStyle}>
-                En la siguiente seccion coloque la dirección exacta del lugar que
-                esta dando en alquiler
+                En la siguiente seccion coloque la dirección exacta del lugar
+                que esta dando en alquiler
               </Typography>
               <TextInput name="location" control={control} multiline />
             </Box>
@@ -418,24 +455,32 @@ const PublishForm = () => {
               <Box>
                 <Typography sx={formTitleStyle}>Extras</Typography>
                 <Typography sx={formDescriptionStyle}>
-                  A continuación se presentan una lista de servicios básicos con los
-                  que se espera que cuente el lugar que esta dando en alquiler,
-                  marca las casillas correspondientes a los servicios con los que
-                  cuenta tu lugar
+                  A continuación se presentan una lista de servicios básicos con
+                  los que se espera que cuente el lugar que esta dando en
+                  alquiler, marca las casillas correspondientes a los servicios
+                  con los que cuenta tu lugar
                 </Typography>
                 <Box display={"flex"} flexWrap={"wrap"} gap={2}>
                   <Box sx={extraParentBoxStyle}>
-                    <CheckboxInput name="extras.petFriendly" control={control} />
+                    <CheckboxInput
+                      name="extras.petFriendly"
+                      control={control}
+                    />
                     <Box sx={extraChildBoxStyle}>
                       <PetsIcon sx={{ color: "#865DFF" }} />
                       <Typography sx={extraTitleStyle}>Mascotas</Typography>
                     </Box>
                   </Box>
                   <Box sx={extraParentBoxStyle}>
-                    <CheckboxInput name="extras.commonAreas" control={control} />
+                    <CheckboxInput
+                      name="extras.commonAreas"
+                      control={control}
+                    />
                     <Box sx={extraChildBoxStyle}>
                       <ChairIcon sx={{ color: "#865DFF" }} />
-                      <Typography sx={extraTitleStyle}>Sala Compartida</Typography>
+                      <Typography sx={extraTitleStyle}>
+                        Sala Compartida
+                      </Typography>
                     </Box>
                   </Box>
                   <Box sx={extraParentBoxStyle}>
@@ -446,7 +491,10 @@ const PublishForm = () => {
                     </Box>
                   </Box>
                   <Box sx={extraParentBoxStyle}>
-                    <CheckboxInput name="extras.cleaningService" control={control} />
+                    <CheckboxInput
+                      name="extras.cleaningService"
+                      control={control}
+                    />
                     <Box sx={extraChildBoxStyle}>
                       <Box
                         component={"img"}
@@ -460,14 +508,20 @@ const PublishForm = () => {
                     </Box>
                   </Box>
                   <Box sx={extraParentBoxStyle}>
-                    <CheckboxInput name="extras.satelliteTV" control={control} />
+                    <CheckboxInput
+                      name="extras.satelliteTV"
+                      control={control}
+                    />
                     <Box sx={extraChildBoxStyle}>
                       <TvIcon sx={{ color: "#865DFF" }} />
                       <Typography sx={extraTitleStyle}>TV Satelital</Typography>
                     </Box>
                   </Box>
                   <Box sx={extraParentBoxStyle}>
-                    <CheckboxInput name="extras.laundryService" control={control} />
+                    <CheckboxInput
+                      name="extras.laundryService"
+                      control={control}
+                    />
                     <Box sx={extraChildBoxStyle}>
                       <LocalLaundryServiceIcon sx={{ color: "#865DFF" }} />
                       <Typography sx={extraTitleStyle}>Lavanderia</Typography>
@@ -477,11 +531,16 @@ const PublishForm = () => {
                     <CheckboxInput name="extras.parkingLot" control={control} />
                     <Box sx={extraChildBoxStyle}>
                       <DirectionsCarIcon sx={{ color: "#865DFF" }} />
-                      <Typography sx={extraTitleStyle}>Estacionamiento</Typography>
+                      <Typography sx={extraTitleStyle}>
+                        Estacionamiento
+                      </Typography>
                     </Box>
                   </Box>
                   <Box sx={extraParentBoxStyle}>
-                    <CheckboxInput name="extras.privateSecurity" control={control} />
+                    <CheckboxInput
+                      name="extras.privateSecurity"
+                      control={control}
+                    />
                     <Box sx={extraChildBoxStyle}>
                       <SecurityIcon sx={{ color: "#865DFF" }} />
                       <Typography sx={extraTitleStyle}>
@@ -492,7 +551,9 @@ const PublishForm = () => {
                 </Box>
               </Box>
               <Box>
-                <Typography sx={formTitleStyle}>Velocidad de internet</Typography>
+                <Typography sx={formTitleStyle}>
+                  Velocidad de internet
+                </Typography>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <NumericInput
                     name="extras.internet"
@@ -502,7 +563,9 @@ const PublishForm = () => {
                 </Box>
               </Box>
               <Box>
-                <Typography sx={formTitleStyle}>Cantidad de habitaciones</Typography>
+                <Typography sx={formTitleStyle}>
+                  Cantidad de habitaciones
+                </Typography>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <NumericInput
                     name="extras.rooms"
@@ -529,7 +592,9 @@ const PublishForm = () => {
                 </Box>
               </Box>
               <Box>
-                <Typography sx={formTitleStyle}>Fotografía del lugar</Typography>
+                <Typography sx={formTitleStyle}>
+                  Fotografía del lugar
+                </Typography>
                 <Typography sx={formDescriptionStyle}>
                   Coloca una fotografía que muestre el mejor ángulo y capte lo
                   mejor del lugar que deseas anunciar en nuestra aplicación
@@ -616,17 +681,22 @@ const PublishForm = () => {
 
         <Grid item xs={12}>
           <Typography sx={formDescriptionStyle}>
-            En el siguiente visor de mapa le pedimos que marque de la manera
-            más certera posible la localización del lugar que desea publicar
+            En el siguiente visor de mapa le pedimos que marque de la manera más
+            certera posible la localización del lugar que desea publicar
           </Typography>
         </Grid>
-        <Grid item xs={12} sx={{ height:  "calc(50vh - 50px)"  }}>
-          <MapContainer center={[13.6989, -89.1914]} zoom={9} style={{ height: "90%", width: "99%" }}>
+        <Grid item xs={12} sx={{ height: "calc(50vh - 50px)" }}>
+          <MapContainer
+            center={[13.6989, -89.1914]}
+            zoom={9}
+            style={{ height: "90%", width: "99%" }}
+          >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
-            <ClickHandler setCoordinates={setCoordinates} />
+            {/* @ts-ignore */}
+            <ClickHandler/>
             {coordinates && (
               <Marker
                 position={[coordinates.lat, coordinates.lng]}
@@ -643,7 +713,11 @@ const PublishForm = () => {
           </MapContainer>
         </Grid>
 
-        <Grid item xs={12} sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+        <Grid
+          item
+          xs={12}
+          sx={{ display: "flex", justifyContent: "center", my: 2 }}
+        >
           <PupilinkButton type="submit">Publicar pupilaje</PupilinkButton>
         </Grid>
       </Grid>
@@ -652,4 +726,3 @@ const PublishForm = () => {
 };
 
 export default PublishForm;
-
