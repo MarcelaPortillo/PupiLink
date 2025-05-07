@@ -1,13 +1,14 @@
 import { Box, Divider, Grid, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import Pupi_Card from "./Pupi_Card";
-import pb from "../../server/Connection";
+import PocketBase from "pocketbase";
 import markerIconPng from "leaflet/dist/images/marker-icon.png";
 import markerShadowPng from "leaflet/dist/images/marker-shadow.png";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import Pupi_card_map_select from "../Pupi_card_map_select";
+
 
 interface Lodging {
   id: string;
@@ -47,36 +48,51 @@ export default function Pupi_card_grid({ filters }: Pupi_card_gridProps) {
   const [locations, setLocations] = useState<Record<string, Location>>({});
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchLodgings = async () => {
       try {
-        const records = await pb.collection("lodging").getFullList<Lodging>({
+        const pbInstance = new PocketBase("http://localhost:8090");
+        const records = await pbInstance.collection("lodging").getFullList<Lodging>({
           sort: "-created",
         });
+        if (!abortController.signal.aborted) {
         setLodgings(records);
+        }
       } catch (error) {
+        if (!abortController.signal.aborted) {
         console.error("Error fetching lodgings:", error);
+       }
       }
     };
 
     const fetchLocations = async () => {
       try {
-        const locationRecords = await pb
-          .collection("location")
+        const pbInstance = new PocketBase("http://localhost:8090");
+        const locationRecords = await pbInstance.collection("location")
           .getFullList<Location>({
             sort: "-created",
           });
+          if (!abortController.signal.aborted) {
         const locationDict: Record<string, Location> = {};
         locationRecords.forEach((location) => {
           locationDict[location.id] = location;
         });
         setLocations(locationDict);
-      } catch (error) {
+      }
+    } catch (error) {
+      if (!abortController.signal.aborted) {
         console.error("Error fetching locations:", error);
       }
-    };
+    }
+  };
 
     fetchLodgings();
     fetchLocations();
+
+    return () => {
+      abortController.abort(); //ejecutar la función de limpieza al desmontar el componente
+    };
   }, []);
 
   const filteredLodgings = lodgings.filter((lodging) => {
@@ -145,18 +161,18 @@ export default function Pupi_card_grid({ filters }: Pupi_card_gridProps) {
         }}
       >
         <MapContainer
-          center={[13.794185, -88.89653]}
+          center={[13.794185, -88.89653] as L.LatLngExpression}
           zoom={9}
           style={{ height: "100%", width: "100%" }}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution="© OpenStreetMap contributors"
           />
           {filteredLodgings.map((lodging) => {
             const location = locations[lodging.location];
             if (!location) return null;
-            const position = [location.latitude, location.longitude];
+            const position = [Number(location.latitude), Number(location.longitude)] as L.LatLngExpression;
             return (
               <Marker
                 position={position}

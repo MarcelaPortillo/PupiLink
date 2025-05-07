@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import getPBInstance from '../utils/PBHelper';
 import pb from '../server/Connection';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -33,15 +34,19 @@ const MyRequests: React.FC = () => {
 
         if (!userId) throw new Error('User not authenticated');
 
-        const records = await pb.collection('lodgingRequest').getFullList<Request>({
+        const pbInstance = getPBInstance();
+        const records = await pbInstance.collection('lodgingRequest').getFullList<Request>({
           filter: `applicant="${userId}"`,
           sort: '-created',
         });
 
         const lodgingIds = Array.from(new Set(records.map(req => req.lodging)));
         const lodgingsData = await Promise.all(
-          lodgingIds.map(id => pb.collection('lodging').getOne<Lodging>(id))
-        );
+          lodgingIds.map(id => {
+            const pbInstance = getPBInstance();
+            return pbInstance.collection('lodging').getOne<Lodging>(id);
+          })
+          );
 
         const lodgingsDict = lodgingsData.reduce((acc, lodging) => {
           acc[lodging.id] = lodging;
@@ -66,7 +71,8 @@ const MyRequests: React.FC = () => {
 
   const handleCancelRequest = async (requestId: string) => {
     try {
-      await pb.collection('lodgingRequest').delete(requestId);
+      const pbInstance = getPBInstance();
+      await pbInstance.collection('lodgingRequest').delete(requestId);
       setRequests(requests.filter(request => request.id !== requestId));
       toast.success('Solicitud cancelada');
     } catch (error) {

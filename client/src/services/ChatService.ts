@@ -3,12 +3,17 @@ import Collections from "../enums/Collections";
 import Chat from "../models/Chat";
 import Message from "../models/Message";
 import User from "../models/User";
-import pb from "../server/Connection";
+import PocketBase from "pocketbase";
 import AuthService from "./AuthService";
+
+const PB_URL = "http://localhost:8090";
 
 export default class ChatService {
   static async getChats(): Promise<Chat[]> {
-    const chats: Chat[] = await pb.collection(Collections.CHAT).getFullList({
+    const pbInstance = new PocketBase(PB_URL);
+    pbInstance.autoCancellation(false);
+
+    const chats: Chat[] = await pbInstance.collection(Collections.CHAT).getFullList({
       expand: "participants,messages,messages.receiver,messages.sender",
       filter: `participants?~"${AuthService.getUserData().id}"`,
     });
@@ -16,7 +21,10 @@ export default class ChatService {
   }
 
   static async getChatMessages(chat: Chat): Promise<Message[]> {
-    const fetchedChat: Chat = await pb
+    const pbInstance = new PocketBase(PB_URL);
+    pbInstance.autoCancellation(false);
+
+    const fetchedChat: Chat = await pbInstance
       .collection(Collections.CHAT)
       .getOne(chat.id, {
         expand: "participants,messages,messages.receiver,messages.sender",
@@ -34,10 +42,8 @@ export default class ChatService {
     if (!participant) {
       return "https://cdn-icons-png.flaticon.com/512/149/149071.png";
     }
-
-    const imageUrl = pb.files.getUrl(participant, participant?.avatar);
-
-    return imageUrl;
+    const pbInstance = new PocketBase(PB_URL);
+    return pbInstance.files.getUrl(participant, participant?.avatar);
   }
 
   static getChatTitle(chat: Chat): string {
@@ -70,6 +76,9 @@ export default class ChatService {
   }
 
   static async createMessage(chat: Chat, content: string) {
+    const pbInstance = new PocketBase(PB_URL);
+    pbInstance.autoCancellation(false);
+
     const toUploadMessage: Partial<Message> & {
       receiver: string;
       sender: string;
@@ -80,20 +89,22 @@ export default class ChatService {
       )?.id!,
       sender: AuthService.getUserData().id!,
     };
-    const message: Message = await pb
+    const message: Message = await pbInstance
       .collection(Collections.MESSAGE)
       .create(toUploadMessage);
-    await pb.collection(Collections.CHAT).update(chat.id, {
+    await pbInstance.collection(Collections.CHAT).update(chat.id, {
       "messages+": message.id,
     });
   }
 
   static async createChat(title: string, lodgingOwner: string) {
+    const pbInstance = new PocketBase(PB_URL);
+    pbInstance.autoCancellation(false);
     const toUploadChat = {
       title,
       participants: [AuthService.getUserData().id!, lodgingOwner],
     }
     
-    await pb.collection(Collections.CHAT).create(toUploadChat);
+    await pbInstance.collection(Collections.CHAT).create(toUploadChat);
   }
 }

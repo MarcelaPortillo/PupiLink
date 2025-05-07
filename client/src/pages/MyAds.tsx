@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import getPBInstance from '../utils/PBHelper';
 import pb from '../server/Connection';
 import { toast, ToastContainer, ToastOptions } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -28,6 +29,9 @@ interface LodgingRequest {
   applicant: string;
   lodging: string;
   created: string;
+  expand?: {
+    lodging: Lodging;
+  };
 }
 
 const MyAds: React.FC = () => {
@@ -52,14 +56,16 @@ const MyAds: React.FC = () => {
         if (!userId) throw new Error('User not authenticated');
 
         // Fetch user lodgings
-        const lodgingRecords = await pb.collection('lodging').getFullList<Lodging>({
+        const pbInstance1 = getPBInstance();
+        const lodgingRecords = await pbInstance1.collection('lodging').getFullList<Lodging>({
           filter: `owner='${userId}'`,
           sort: '-created',
         });
         setLodgings(lodgingRecords);
 
         // Fetch requests for user's lodgings
-        const requestRecords = await pb.collection('lodgingRequest').getFullList<LodgingRequest>({
+        const pbInstance2 = getPBInstance();
+        const requestRecords = await pbInstance2.collection('lodgingRequest').getFullList<LodgingRequest>({
           filter: `lodging.owner='${userId}'`,
           expand: 'lodging',
           sort: '-created',
@@ -73,9 +79,16 @@ const MyAds: React.FC = () => {
     fetchLodgings();
   }, []);
 
+  useEffect(() => {
+    if (!AuthService.isLoggedIn()) {
+      navigate(PupilinkRoutes.LOGIN);
+    }
+  }, []);
+
   const handleDelete = async (id: string) => {
     try {
-      await pb.collection('lodging').delete(id);
+      const pbInstance = getPBInstance();
+      await pbInstance.collection('lodging').delete(id);
       setLodgings((prevLodgings) => prevLodgings.filter((lodging) => lodging.id !== id));
       toast.success('Anuncio eliminado con éxito', {
         ...toastOptions,
@@ -94,7 +107,8 @@ const MyAds: React.FC = () => {
 
   const handleUpdateRequestStatus = async (id: string, status: string) => {
     try {
-      await pb.collection('lodgingRequest').update(id, { status });
+      const pbInstance = getPBInstance();
+      await pbInstance.collection('lodgingRequest').update(id, { status });
       setRequests(prevRequests =>
         prevRequests.map(req => (req.id === id ? { ...req, status } : req))
       );
@@ -112,12 +126,6 @@ const MyAds: React.FC = () => {
       });
     }
   };
-
-  useEffect(() => {
-    if (!AuthService.isLoggedIn()) {
-      navigate(PupilinkRoutes.LOGIN);
-    }
-  }, [])
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -150,13 +158,16 @@ const MyAds: React.FC = () => {
       <h2 className="text-2xl font-bold mb-4">Solicitudes Recibidas</h2>
       {requests.map((request) => (
         <div key={request.id} className="bg-white p-4 rounded-lg shadow-md mb-4 flex items-center">
-          <img
-            src={pb.files.getUrl(request.expand.lodging, request.expand.lodging.image)}
-            alt={request.expand.lodging.title}
-            className="w-20 h-20 object-cover rounded-md mr-4"
-          />
+          {request.expand?.lodging && (
+            <img
+              src={pb.files.getUrl(request.expand.lodging, request.expand.lodging.image)}
+              alt={request.expand.lodging.title}
+              className="w-20 h-20 object-cover rounded-md mr-4"
+            />
+          )}    
+
           <div className="flex-1">
-            <h3 className="font-bold text-custom-purple mb-2">{request.expand.lodging.title}</h3>
+            <h3 className="font-bold text-custom-purple mb-2">{request.expand?.lodging.title}</h3>
             <p className="text-gray-600">Estado: {request.status}</p>
             <p className="text-gray-600">Precio Propuesto: ${request.proposedPrice}</p>
             <p className="text-gray-600">Fecha de Creación: {new Date(request.created).toLocaleDateString()}</p>

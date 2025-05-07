@@ -18,6 +18,8 @@ const NumericInput = <T extends FieldValues>(props: Props<T>) => {
         return (
           <TextField
             {...field}
+            type="number"
+            value={field.value ?? ""} 
             error={!!formError}
             helperText={formError}
             size="small"

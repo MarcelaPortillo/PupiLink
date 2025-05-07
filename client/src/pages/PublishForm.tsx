@@ -42,7 +42,8 @@ import { PublishLodgingRequest, PublishLodgingSchema } from "../utils/PublishLod
 import LodgingService from '../services/LodgingService';
 import { useNavigate } from 'react-router-dom';
 import PupilinkRoutes from '../enums/PupilinkRoutes';
-import { MapContainer, TileLayer, useMapEvent, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, useMap,  useMapEvent, Marker, Popup } from "react-leaflet";
+import { Marker as LeafletMarker } from "leaflet";
 import { toast, ToastOptions } from 'react-toastify';
 import Navbar from '../components/Navbar';
 
@@ -133,12 +134,16 @@ const lodgingTypeRadioOptions: RadioGroupType<LodgingType>[] = [
   },
 ]
 
+interface ClickHandlerProps {
+  setCoordinates: React.Dispatch<React.SetStateAction<{ lat: string; lng: string } | null>>;
+}
 const PublishForm = () => {
-  const [coordinates, setCoordinates] = useState(null);
+  const [coordinates, setCoordinates] = useState<{ lat: string; lng: string } | null>(null);
+  const [searchAddress, setSearchAddress] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const { handleSubmit, control, setValue, formState: { errors } } = useForm<PublishLodgingRequest>({ resolver: zodResolver(PublishLodgingSchema) });
   const navigate = useNavigate();
-  const markerRef = useRef(null);
+  const markerRef = useRef<LeafletMarker | null>(null);
 
   const toastOptions: ToastOptions = {
     position: "top-right",
@@ -155,11 +160,35 @@ const PublishForm = () => {
     setValue("image", null);
   }
 
-  const ClickHandler = ({ setCoordinates }) => {
+  const searchLocation = async () => {
+    if (!searchAddress) return;
+
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddress)}`);
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      const { lat, lon, display_name } = data[0];
+      setCoordinates({ lat, lng: lon });
+      setValue("location", display_name);
+    } else {
+      toast.error("No se encontró la ubicación", toastOptions);
+    }
+  };
+  
+
+  const ClickHandler = ({ setCoordinates }: ClickHandlerProps) => {
     useMapEvent("click", (event) => {
       const { lat, lng } = event.latlng;
       setCoordinates({ lat: lat.toString(), lng: lng.toString() });
     });
+    return null;
+  };
+
+  const MapCenterer = ({ lat, lng }: { lat: number; lng: number }) => {
+    const map = useMap();
+    useEffect(() => {
+      map.setView([lat, lng], 16);
+    }, [lat, lng]);
     return null;
   };
 
@@ -174,8 +203,7 @@ const PublishForm = () => {
       data.latitude = coordinates?.lat ? coordinates.lat : "0";
       data.longitude = coordinates?.lng ? coordinates.lng : "0";
 
-      const response = await LodgingService.creat
-      eLodging(data);
+      const response = await LodgingService.createLodging(data);
 
       toast.success("Alojamiento publicado con exito", {
         ...toastOptions,
@@ -297,10 +325,11 @@ const PublishForm = () => {
                     return (
                       <TextField
                         {...field}
+                        value={field.value ?? ""}
                         error={!!formError}
                         helperText={formError}
                         size="small"
-                        id="outlined-basic"
+                        id={`input-price`}
                         variant="outlined"
                         sx={{
                           "& .MuiOutlinedInput-root": { bgcolor: "#dcdce8" },
@@ -345,6 +374,7 @@ const PublishForm = () => {
                     return (
                       <DatePicker
                         {...field}
+                        value={field.value ?? null}
                         slots={{
                           openPickerIcon: () => (
                             <CalendarMonthIcon
@@ -569,8 +599,8 @@ const PublishForm = () => {
                         <Typography
                           sx={{ color: "#d32f2f", fontSize: "0.75rem" }}
                         >
-                          {`${errors.image.message}` ??
-                            "La imagen es obligatoria"}
+                          {`${errors.image?.message  ??
+                            "La imagen es obligatoria"}`}
                         </Typography>
                       )}
                     </Stack>
@@ -621,6 +651,19 @@ const PublishForm = () => {
             más certera posible la localización del lugar que desea publicar
           </Typography>
         </Grid>
+        <Grid item xs={12}>
+          <Typography sx={{ mt: 2 }}>Buscar dirección</Typography>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <TextField
+              placeholder="Ejemplo: San Benito, San Salvador"
+              size="small"
+              fullWidth
+              value={searchAddress}
+              onChange={(e) => setSearchAddress(e.target.value)}
+            />
+            <PupilinkButton type="button" onClick={searchLocation}>Buscar</PupilinkButton>
+          </Box>
+        </Grid>
         <Grid item xs={12} sx={{ height: { xs: "40vh", md: "calc(50vh - 50px)" } }}>
           <MapContainer center={[13.6989, -89.1914]} zoom={9} style={{ height: "90%", width: "99%" }}>
             <TileLayer
@@ -629,8 +672,10 @@ const PublishForm = () => {
             />
             <ClickHandler setCoordinates={setCoordinates} />
             {coordinates && (
+              <>
+              <MapCenterer lat={Number(coordinates.lat)} lng={Number(coordinates.lng)} />
               <Marker
-                position={[coordinates.lat, coordinates.lng]}
+                position={[Number(coordinates.lat), Number(coordinates.lng)]}
                 ref={markerRef}
               >
                 <Popup>
@@ -640,6 +685,7 @@ const PublishForm = () => {
                   </Typography>
                 </Popup>
               </Marker>
+              </>
             )}
           </MapContainer>
         </Grid>
